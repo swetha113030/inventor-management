@@ -1,5 +1,7 @@
 package com.example.inventory;
 
+import com.example.inventory.entity.Product;
+import com.example.inventory.repository.ProductRepository;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -55,16 +57,5 @@ public class ProductController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found");
         }
         repository.deleteById(id);
-    }
-
-    @GetMapping("/search")
-    public List<Product> searchProducts(@RequestParam String name) {
-        return repository.findByNameContainingIgnoreCase(name);
-    }
-
-    @GetMapping("/low-stock")
-    public List<Product> getLowStockProducts(
-            @RequestParam(defaultValue = "5") Integer threshold) {
-        return repository.findByQuantityLessThan(threshold);
     }
 }
