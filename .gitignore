@@ -1,0 +1,9 @@
+**/target/
+.idea/
+*.iml
+__pycache__/
+.venv/
+*.pyc
+.env
+application-local.properties
+.DS_Store

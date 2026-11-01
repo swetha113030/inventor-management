@@ -1,0 +1,12 @@
+START HERE
+==========
+1. Install Java 17, Python 3, MySQL Server and IntelliJ IDEA.
+2. Open sql/schema.sql in MySQL Workbench and run it.
+3. Run sql/sample_data.sql in MySQL Workbench.
+4. Open the inventory-api folder in IntelliJ.
+5. Set DB_PASSWORD in the Spring Boot Run Configuration.
+6. Run InventoryApiApplication.java.
+7. In a second terminal, run: python python-tools/inventory_report.py
+8. Read README.md for API examples, SQL exercises, tests and GitHub publishing.
+
+Keep your database password private. Do not upload it to GitHub.
