@@ -4,6 +4,8 @@ package com.example.inventory.service;
 import com.example.inventory.dto.InventorySummary;
 import com.example.inventory.entity.Product;
 import com.example.inventory.repository.ProductRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -61,11 +63,7 @@ public class ProductService {
     // Calculate total inventory value
     public BigDecimal getTotalInventoryValue() {
 
-        return repository.findAll()
-                .stream()
-                .map(product -> product.getPrice()
-                        .multiply(BigDecimal.valueOf(product.getQuantity())))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return repository.calculateTotalInventoryValue();
     }
 
     // Find low-stock products
@@ -82,10 +80,12 @@ public class ProductService {
     // Calculate total stock units
     public long getTotalStockUnits() {
 
-        return repository.findAll()
-                .stream()
-                .mapToLong(product -> product.getQuantity())
-                .sum();
+        return repository.calculateTotalStockUnits();
+    }
+
+    public long getCategoryProductCount(String category) {
+
+        return repository.countByCategory(category);
     }
 
     // Search products by category
@@ -120,5 +120,9 @@ public class ProductService {
                 totalInventoryValue,
                 lowStockProductCount
         );
+    }
+    // Retrieve products with pagination and sorting
+    public Page<Product> getProductsPaginated(Pageable pageable) {
+        return repository.findAll(pageable);
     }
 }

@@ -5,6 +5,10 @@ import com.example.inventory.dto.InventorySummary;
 import com.example.inventory.entity.Product;
 import com.example.inventory.service.ProductService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -103,5 +107,27 @@ public class ProductController {
     @GetMapping("/inventory-summary")
     public InventorySummary getInventorySummary() {
         return service.getInventorySummary();
+    }
+
+    @GetMapping("/category/{category}/count")
+    public long getCategoryProductCount(
+            @PathVariable String category) {
+
+        return service.getCategoryProductCount(category);
+    }
+    @GetMapping("/page")
+    public Page<Product> getProductsPaginated(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "asc") String direction) {
+
+        Sort sort = direction.equalsIgnoreCase("desc")
+                ? Sort.by(sortBy).descending()
+                : Sort.by(sortBy).ascending();
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        return service.getProductsPaginated(pageable);
     }
 }
