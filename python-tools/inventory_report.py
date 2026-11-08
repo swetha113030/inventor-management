@@ -1,66 +1,50 @@
-"""Read inventory data from the Java API and print a simple report."""
 
-import json
-from decimal import Decimal
-from urllib.request import Request, urlopen
-from urllib.error import HTTPError, URLError
+import requests
+import pandas as pd
 
-BASE_URL = "http://localhost:8080/api/products"
+API_URL = "http://localhost:8080/api/products"
 
 
-def get_products():
-    """Return all products from the Java API."""
-    with urlopen(BASE_URL, timeout=10) as response:
-        return json.loads(response.read().decode("utf-8"))
+def fetch_products():
+    response = requests.get(API_URL, timeout=10)
+    response.raise_for_status()
+    return response.json()
 
 
-def add_product(name, category, price, quantity):
-    """Create a product through the Java API."""
-    data = {
-        "name": name,
-        "category": category,
-        "price": str(price),
-        "quantity": quantity,
-    }
-    request = Request(
-        BASE_URL,
-        data=json.dumps(data).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-    with urlopen(request, timeout=10) as response:
-        return json.loads(response.read().decode("utf-8"))
+def generate_report():
+    products = fetch_products()
 
+    df = pd.DataFrame(products)
 
-def print_inventory_report(products):
-    """Print counts, value and low-stock products."""
-    total_units = sum(int(product["quantity"]) for product in products)
-    total_value = sum(
-        Decimal(str(product["price"])) * int(product["quantity"])
-        for product in products
-    )
-    low_stock = [p for p in products if int(p["quantity"]) < 5]
+    if df.empty:
+        print("No products found.")
+        return
 
-    print("\\n=== INVENTORY REPORT ===")
-    print(f"Different products: {len(products)}")
-    print(f"Total units in stock: {total_units}")
-    print(f"Inventory value: {total_value:.2f}")
-    print("\\nProducts with fewer than 5 units:")
+    df["inventory_value"] = df["price"] * df["quantity"]
 
-    if not low_stock:
-        print("No low-stock products.")
-    else:
-        for product in low_stock:
-            print(f'{product["name"]}: {product["quantity"]} units')
+    total_products = len(df)
+    total_stock = df["quantity"].sum()
+    inventory_value = df["inventory_value"].sum()
+
+    low_stock = df[df["quantity"] < 5]
+
+    print("\n=== INVENTORY REPORT ===")
+    print(f"Different products: {total_products}")
+    print(f"Total units in stock: {total_stock}")
+    print(f"Inventory value: {inventory_value:.2f}")
+
+    print("\nProducts with fewer than 5 units:")
+    for _, product in low_stock.iterrows():
+        print(f"{product['name']}: {product['quantity']} units")
+
+    # Export reports
+    df.to_csv("inventory_report.csv", index=False)
+    df.to_excel("inventory_report.xlsx", index=False)
+
+    print("\nReports generated successfully!")
+    print("Created: inventory_report.csv")
+    print("Created: inventory_report.xlsx")
 
 
 if __name__ == "__main__":
-    try:
-        products = get_products()
-        print_inventory_report(products)
-    except HTTPError as error:
-        print(f"API returned HTTP error: {error.code}")
-    except URLError:
-        print("Cannot reach Java API. Is Spring Boot running on port 8080?")
-    except (ValueError, KeyError) as error:
-        print(f"Unexpected API response: {error}")
+    generate_report()

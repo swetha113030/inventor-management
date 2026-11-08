@@ -7,3 +7,7 @@ __pycache__/
 .env
 application-local.properties
 .DS_Store
+
+# Generated inventory reports
+python-tools/inventory_report.csv
+python-tools/inventory_report.xlsx
