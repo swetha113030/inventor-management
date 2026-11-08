@@ -1,148 +1,462 @@
-# Java + Python + SQL Inventory Management System
+# Smart Inventory Management System
 
-A beginner-friendly portfolio project using Java, Spring Boot, MySQL, Python, and SQL.
+A portfolio project demonstrating how to build an inventory management
+backend with **Java, Spring Boot, MySQL, SQL and Python**. The Spring
+Boot application exposes REST APIs and manages database access, while a
+separate Python script consumes the API to analyse inventory and
+generate CSV and Excel reports.
+
+## Table of Contents
+
+-   [Project Overview](#project-overview)
+-   [Features](#features)
+-   [Technology Stack](#technology-stack)
+-   [Architecture](#architecture)
+-   [Project Structure](#project-structure)
+-   [Prerequisites](#prerequisites)
+-   [Getting Started](#getting-started)
+-   [REST API Reference](#rest-api-reference)
+-   [Python Inventory Reports](#python-inventory-reports)
+-   [SQL and Database Optimisation](#sql-and-database-optimisation)
+-   [Running Tests](#running-tests)
+-   [Troubleshooting](#troubleshooting)
+-   [Future Enhancements](#future-enhancements)
+
+## Project Overview
+
+The Smart Inventory Management System provides a way to manage product
+records and analyse stock information.
+
+The Java backend handles product operations, validation, business logic
+and database communication. Python consumes the backend's REST API and
+produces inventory analysis reports.
+
+**Design principle:** Python does not connect directly to MySQL. It
+communicates with the Spring Boot API, keeping database access and
+application logic in the backend.
 
 ## Features
 
-- Create, read, update, and delete products through a REST API
-- Validate product names, categories, prices, and quantities
-- Search products by name
-- List products below a stock threshold
-- Run SQL inventory and category reports
-- Use Python to read the Java API and calculate stock totals
-- Run automated Spring Boot tests using an isolated H2 in-memory database
+### Inventory management
+
+-   Create, retrieve, update and delete product records.
+-   Retrieve an individual product by its ID.
+-   Search and filter product records.
+-   Validate product names, categories, prices and quantities.
+-   Return useful error responses for invalid requests or missing
+    records.
+
+### Inventory analytics
+
+-   Calculate total inventory value, product count and stock units.
+-   Identify products below a configurable stock threshold.
+-   Retrieve products by category.
+-   Generate an inventory summary.
+
+### Database and API
+
+-   Persist product information in MySQL using Spring Data JPA and
+    Hibernate.
+-   Use custom JPQL queries for aggregate calculations.
+-   Use database indexes for frequently queried fields.
+-   Support pagination and sorting.
+
+### Python reporting
+
+-   Fetch product data from the Spring Boot REST API.
+-   Analyse inventory data with Pandas.
+-   Calculate each product's inventory value.
+-   Identify low-stock products.
+-   Export reports to CSV and Excel.
+
+## Technology Stack
+
+Technology        Purpose
+  ----------------- ----------------------------------------------
+Java              Backend programming language
+Spring Boot       REST API and application framework
+Spring Data JPA   Repository and database access
+Hibernate         Object-relational mapping
+MySQL             Relational database
+SQL / JPQL        Data retrieval, aggregation and optimisation
+Maven             Java dependency and build management
+Python            Reporting and data-processing scripts
+Requests          Calling the Spring Boot API from Python
+Pandas            Data analysis and report preparation
+OpenPyXL          Excel file generation
 
 ## Architecture
 
-Python report script -> Java Spring Boot REST API -> MySQL database
+``` text
+                  +-------------------------+
+                  |     Python Reporting    |
+                  | Requests + Pandas       |
+                  | CSV / Excel generation  |
+                  +------------+------------+
+                               |
+                               | HTTP / JSON
+                               v
+                  +-------------------------+
+                  |    Spring Boot REST API |
+                  | Controllers             |
+                  | Services                |
+                  | Repositories            |
+                  +------------+------------+
+                               |
+                               | Spring Data JPA
+                               v
+                  +-------------------------+
+                  |       MySQL Database    |
+                  |       inventory_db      |
+                  +-------------------------+
+```
 
-Python does not connect directly to MySQL. It calls the Java API, which owns the business logic and database access.
+The controller receives HTTP requests, the service layer contains
+business logic, and the repository layer communicates with MySQL. The
+Python reporting script calls the API rather than querying the database
+directly.
 
-## Requirements
+## Project Structure
 
-- Java 17 or later
-- MySQL Server
-- IntelliJ IDEA or another Java IDE
-- Python 3
-- Git (for publishing to GitHub)
+``` text
+java-python-sql-inventory-management/
+|
+|-- inventory-api/
+|   |-- src/
+|   |   |-- main/
+|   |   |   |-- java/com/example/inventory/
+|   |   |   |   |-- controller/
+|   |   |   |   |-- service/
+|   |   |   |   |-- repository/
+|   |   |   |   |-- entity/
+|   |   |   |   |-- dto/
+|   |   |   |   |-- GlobalExceptionHandler.java
+|   |   |   |   |-- InventoryApiApplication.java
+|   |   |   |
+|   |   |   |-- resources/
+|   |   |       |-- application.properties
+|   |   |
+|   |   |-- test/
+|   |
+|   |-- pom.xml
+|
+|-- python-tools/
+|   |-- inventory_report.py
+|   |-- requirements.txt
+|   |-- inventory_report.csv       # Generated report
+|   |-- inventory_report.xlsx     # Generated report
+|
+|-- sql/
+|   |-- schema.sql
+|   |-- sample_data.sql
+|   |-- inventory_reports.sql
+|
+|-- .gitignore
+|-- README.md
+```
 
-Maven is included through the Maven wrapper if the wrapper files are generated by your IDE. Otherwise install Maven and use `mvn` commands.
+The Java package layout above describes the main application layers.
+Generated reports and the Python virtual environment are local outputs
+and should not be committed.
 
-## 1. Create the database
+## Prerequisites
 
-Open MySQL Workbench and run `sql/schema.sql`, then run `sql/sample_data.sql`.
+-   Java 17 or later.
+-   MySQL Server and MySQL Workbench.
+-   Python 3.
+-   IntelliJ IDEA or another Java IDE.
+-   Git.
+-   Maven, unless a Maven wrapper is included in the project.
 
-The sample script is intended for a fresh database. If you run it repeatedly, it will insert duplicate sample products.
+## Getting Started
 
-## 2. Configure the database password
+### 1. Create the MySQL database
 
-The app reads these environment variables:
+1.  Start MySQL Server.
+2.  Open MySQL Workbench and connect to your local MySQL instance.
+3.  Execute `sql/schema.sql`.
+4.  Execute `sql/sample_data.sql` to insert sample products.
 
-- `DB_URL` (defaults to `jdbc:mysql://localhost:3306/inventory_db`)
-- `DB_USERNAME` (defaults to `root`)
-- `DB_PASSWORD` (required)
+The sample-data script is intended for initial setup. Running it
+repeatedly may insert duplicate sample records.
 
-In IntelliJ, open Run > Edit Configurations and add `DB_PASSWORD` with your local MySQL password. Set `DB_USERNAME` if your MySQL user is not `root`. Never commit credentials to GitHub.
+### 2. Configure database credentials
 
-## 3. Run the Java API
+The Spring Boot application reads its database settings from environment
+variables.
 
-Open the `inventory-api` folder in IntelliJ and run `InventoryApiApplication`.
+  --------------------------------------------------------------------------------------------
+Variable                Purpose                 Default
+  ----------------------- ----------------------- --------------------------------------------
+`DB_URL`                MySQL JDBC connection   `jdbc:mysql://localhost:3306/inventory_db`
+URL
 
-Or, if Maven is installed, open a terminal in `inventory-api` and run:
+`DB_USERNAME`           MySQL username          `root`
 
-```bash
+`DB_PASSWORD`           MySQL password          Must be configured locally
+--------------------------------------------------------------------------------------------
+
+For local development in Windows PowerShell, set the variables before
+starting the application:
+
+``` powershell
+$env:DB_URL = "jdbc:mysql://localhost:3306/inventory_db"
+$env:DB_USERNAME = "root"
+$env:DB_PASSWORD = "your-local-mysql-password"
+```
+
+Replace the example password with your local MySQL password. Do not
+commit real credentials, passwords or tokens to GitHub.
+
+Alternatively, configure these environment variables in the IntelliJ Run
+Configuration for `InventoryApiApplication`.
+
+### 3. Start the Spring Boot API
+
+Open the project in IntelliJ IDEA and run `InventoryApiApplication.java`
+from the `inventory-api` module.
+
+If Maven is installed, you can also start the application from the
+`inventory-api` directory:
+
+``` bash
 mvn spring-boot:run
 ```
 
-The API runs at `http://localhost:8080`.
+When startup succeeds, the API is available at `http://localhost:8080`.
 
-## 4. Try the API
+Keep the API running while using the Python reporting script.
 
-Get all products:
+### 4. Verify the API
 
-```bash
+Open this address in a browser:
+
+``` text
+http://localhost:8080/api/products
+```
+
+A successful response should contain product data in JSON format.
+
+You can also use:
+
+``` bash
 curl http://localhost:8080/api/products
 ```
 
-Create a product (PowerShell):
+### 5. Set up and run the Python report
 
-```powershell
+Open a separate terminal in the project root.
+
+Create a virtual environment:
+
+``` bash
+python -m venv python-tools/.venv
+```
+
+Activate it on Windows PowerShell:
+
+``` powershell
+.\python-tools\.venv\Scripts\Activate.ps1
+```
+
+Install the dependencies:
+
+``` bash
+python -m pip install -r python-tools/requirements.txt
+```
+
+Run the report while the Spring Boot API is running:
+
+``` bash
+python python-tools/inventory_report.py
+```
+
+The script fetches product data from the API and generates: -
+`python-tools/inventory_report.csv` -
+`python-tools/inventory_report.xlsx`
+
+The generated files are local outputs and are excluded from Git.
+
+## REST API Reference
+
+The following endpoints are documented for the inventory API.
+
+  ------------------------------------------------------------------------------------------------------------
+Method                  Endpoint                                                     Purpose
+  ----------------------- ------------------------------------------------------------ -----------------------
+GET                     `/api/products`                                              Retrieve all products
+
+GET                     `/api/products/{id}`                                         Retrieve a product by
+ID
+
+POST                    `/api/products`                                              Create a product
+
+PUT                     `/api/products/{id}`                                         Update a product
+
+DELETE                  `/api/products/{id}`                                         Delete a product
+
+GET                     `/api/products/search?name=mouse`                            Search products by name
+
+GET                     `/api/products/low-stock?threshold=5`                        Find products below a
+stock threshold
+
+GET                     `/api/products/inventory-value`                              Calculate total
+inventory value
+
+GET                     `/api/products/count`                                        Count products
+
+GET                     `/api/products/total-stock`                                  Calculate total stock
+units
+
+GET                     `/api/products/category/{category}`                          Retrieve products by
+category
+
+GET                     `/api/products/category/{category}/count`                    Count products in a
+category
+
+GET                     `/api/products/inventory-summary`                            Retrieve inventory
+summary
+
+GET                     `/api/products/page?page=0&size=5&sortBy=id&direction=asc`   Retrieve a page of
+products with sorting
+  ------------------------------------------------------------------------------------------------------------
+
+Pagination parameters: - `page`: zero-based page number. - `size`:
+number of records per page. - `sortBy`: product field used for
+sorting. - `direction`: `asc` or `desc`.
+
+### Example: Create a product
+
+Example JSON request body:
+
+``` json
+{
+  "name": "Wireless Mouse",
+  "category": "Accessories",
+  "price": 19.99,
+  "quantity": 20
+}
+```
+
+Example PowerShell request:
+
+``` powershell
 $body = @{
-  name = "Mouse"
-  category = "Accessories"
-  price = 19.99
-  quantity = 20
+    name = "Wireless Mouse"
+    category = "Accessories"
+    price = 19.99
+    quantity = 20
 } | ConvertTo-Json
 
 Invoke-RestMethod -Uri "http://localhost:8080/api/products" -Method Post -ContentType "application/json" -Body $body
 ```
 
-Other endpoints:
+The API validates incoming product data. For example, product names and
+categories cannot be blank, prices must be greater than zero, and
+quantities cannot be negative.
 
-| Method | Endpoint | Purpose |
-| --- | --- | --- |
-| GET | `/api/products` | List products |
-| GET | `/api/products/{id}` | Get one product |
-| POST | `/api/products` | Create a product |
-| PUT | `/api/products/{id}` | Update a product |
-| DELETE | `/api/products/{id}` | Delete a product |
-| GET | `/api/products/search?name=mouse` | Search by product name |
-| GET | `/api/products/low-stock?threshold=5` | List products with quantity below threshold |
+## Python Inventory Reports
 
-## 5. Run the Python report
+The Python script calls:
 
-Keep the Java API running. In another terminal, run:
-
-```bash
-python python-tools/inventory_report.py
+``` text
+GET http://localhost:8080/api/products
 ```
 
-Python uses only standard-library modules, so no pip install is required.
+It uses Pandas to process the returned JSON data and calculate: - Number
+of products. - Total stock units. - Inventory value
+(`price × quantity`). - Products below the configured low-stock
+threshold.
 
-## 6. Run automated tests
+It exports product data, including calculated inventory values, to CSV
+and Excel files.
 
-The tests use an in-memory H2 database so they do not need your MySQL credentials or modify your development database.
+**Important:** Start the Spring Boot API before running the Python
+script. The script depends on the API being available.
+
+## SQL and Database Optimisation
+
+The `sql/` directory contains database setup and SQL practice scripts.
+
+The project uses SQL and JPQL for: - Counting products. - Summing stock
+quantities. - Calculating total inventory value. - Grouping inventory
+value by category. - Filtering products by stock quantity.
+
+Indexes are created for commonly queried product fields such as category
+and quantity. Use `EXPLAIN` in MySQL Workbench to inspect query
+execution.
+
+Example:
+
+``` sql
+EXPLAIN
+SELECT *
+FROM products
+WHERE category = 'Accessories';
+```
+
+## Running Tests
+
+The project includes Spring Boot test dependencies and an H2 in-memory
+database dependency for isolated testing.
 
 From the `inventory-api` directory, run:
 
-```bash
+``` bash
 mvn test
 ```
 
-## SQL practice
-
-Open `sql/inventory_reports.sql` in MySQL Workbench to practise filtering, aggregation, grouping, and sorting.
-
-## Beginner exercises
-
-1. Add a `supplier` field to the product model and database.
-2. Add a `reorder_level` field and use it in the low-stock report.
-3. Add a category filter endpoint.
-4. Add tests for missing product IDs and invalid prices.
-5. Add pagination and sorting.
-6. Add a small frontend after the backend is stable.
-
-## GitHub publishing
-
-Create an empty GitHub repository, then run these commands from the project root:
-
-```bash
-git init
-git add .
-git status
-git commit -m "Initial inventory management project"
-git branch -M main
-git remote add origin YOUR_REPOSITORY_URL
-git push -u origin main
-```
-
-Review `git status` before committing. Never upload passwords, access tokens, or private company data.
+Review the Maven test output to confirm the test results. The H2 test
+database is separate from the local MySQL development database.
 
 ## Troubleshooting
 
-- **Access denied:** check `DB_USERNAME` and `DB_PASSWORD`.
-- **Connection refused:** confirm MySQL Server is running and the port in `DB_URL` is correct.
-- **Table not found:** run `sql/schema.sql` and `sql/sample_data.sql`.
-- **Port 8080 already in use:** stop the other application or change `server.port`.
-- **Python cannot connect:** start the Java API first.
-- **Maven dependency errors:** check your internet connection and allow Maven to download dependencies.
+  ---------------------------------------------------------------------------
+Problem                             What to check
+  ----------------------------------- ---------------------------------------
+MySQL access denied                 Check `DB_USERNAME` and `DB_PASSWORD`.
+
+Cannot connect to MySQL             Confirm MySQL Server is running and
+`DB_URL` is correct.
+
+Table does not exist                Run `sql/schema.sql` and then
+`sql/sample_data.sql`.
+
+Port 8080 is already in use         Stop the other process using the port
+or change `server.port`.
+
+Python cannot connect to the API    Start Spring Boot and check
+`http://localhost:8080/api/products`.
+
+Python package is missing           Activate the virtual environment and
+install `requirements.txt`.
+
+Maven dependency or build error     Check the internet connection and Maven
+output.
+
+Database password is unavailable    Set `DB_PASSWORD` in the terminal or
+IntelliJ Run Configuration used to
+start the application.
+  ---------------------------------------------------------------------------
+
+## Future Enhancements
+
+-   Add automated unit and integration tests for all API operations.
+-   Add Swagger/OpenAPI documentation.
+-   Add Docker and Docker Compose for repeatable local setup.
+-   Add supplier and reorder-level management.
+-   Add authentication and role-based authorisation.
+-   Build a web frontend for inventory users.
+-   Add CI using GitHub Actions.
+-   Deploy the application to a cloud platform.
+
+## Project Learning Outcomes
+
+This project provides practical experience with: - Building REST APIs
+using Java and Spring Boot. - Separating controller, service and
+repository responsibilities. - Mapping Java entities to relational
+database tables with JPA and Hibernate. - Validating request data and
+handling API errors. - Writing SQL and JPQL aggregate queries. -
+Applying database indexes, pagination and sorting. - Consuming REST APIs
+from Python. - Analysing data with Pandas and exporting CSV and Excel
+reports. - Managing source code and documentation with Git.
