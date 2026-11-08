@@ -20,6 +20,7 @@ generate CSV and Excel reports.
 -   [SQL and Database Optimisation](#sql-and-database-optimisation)
 -   [Running Tests](#running-tests)
 -   [Logging and Monitoring](#logging-and-monitoring)
+-   [Database Performance Optimisation](#database-performance-optimisation)
 -   [Troubleshooting](#troubleshooting)
 -   [Future Enhancements](#future-enhancements)
 
@@ -395,6 +396,107 @@ SELECT *
 FROM products
 WHERE category = 'Accessories';
 ```
+
+## Database Performance Optimisation
+
+This project uses MySQL indexes and query execution plans to investigate
+and improve database query performance.
+
+### Existing indexes
+
+The `products` table uses indexes for commonly queried fields:
+
+| Index | Indexed column(s) | Purpose |
+|---|---|---|
+| `PRIMARY` | `id` | Identifies products by their unique ID |
+| `idx_products_category` | `category` | Supports category filtering |
+| `idx_products_quantity` | `quantity` | Supports stock-threshold filtering |
+| `idx_products_category_lower` | `LOWER(category)` | Supports the matching lower-case category expression |
+| `idx_products_category_quantity` | `category`, `quantity` | Supports queries filtering by category and quantity |
+
+The functional and composite indexes are additional indexes created during
+the database optimisation exercises. Confirm that they exist in the target
+database before relying on them.
+
+### Query plan analysis
+
+MySQL `EXPLAIN` was used to inspect how queries access the `products` table.
+
+Examples:
+
+```sql
+-- Category lookup
+EXPLAIN
+SELECT *
+FROM products
+WHERE category = 'Electronics';
+
+-- Low-stock lookup
+EXPLAIN
+SELECT *
+FROM products
+WHERE quantity < 5;
+
+-- Case-insensitive category lookup
+EXPLAIN
+SELECT *
+FROM products
+WHERE LOWER(category) = LOWER('Electronics');
+
+-- Category and quantity filtering
+EXPLAIN
+SELECT *
+FROM products
+WHERE category = 'Electronics'
+  AND quantity < 5;
+```
+
+The exercises demonstrated:
+- `ref` access when MySQL selected an index for an equality lookup.
+- `range` access for a quantity range condition.
+- A full table scan (`ALL`) for the `LOWER(category)` expression before
+  creating a matching functional index.
+- Use of the functional index after it was created.
+- The MySQL optimiser's choice of an index for a query involving multiple
+  filter conditions.
+
+### Functional index
+
+A functional index was created for case-insensitive category matching:
+
+```sql
+CREATE INDEX idx_products_category_lower
+ON products ((LOWER(category)));
+```
+
+This index can support queries using the matching `LOWER(category)`
+expression. Index usage still depends on the query expression and the
+optimiser's cost estimates.
+
+### Composite index
+
+A composite index was created for category and quantity filtering:
+
+```sql
+CREATE INDEX idx_products_category_quantity
+ON products (category, quantity);
+```
+
+The order of columns in a composite index matters. This index is intended
+for queries that filter by `category`, optionally followed by a condition
+on `quantity`. The optimiser may choose a different index depending on
+table size, data distribution and estimated query cost.
+
+### Performance investigation tools
+
+- `SHOW INDEX FROM products` lists the indexes defined on the table.
+- `EXPLAIN` shows the optimiser's estimated execution plan.
+- `EXPLAIN ANALYZE` executes a query and reports actual execution details,
+  including timing and rows processed.
+
+For meaningful performance comparisons, test with a representative dataset.
+A very small table may be faster to scan than to access through an index,
+so an index is not guaranteed to be selected for every query.
 
 ## Running Tests
 
