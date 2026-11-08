@@ -19,6 +19,7 @@ generate CSV and Excel reports.
 -   [Python Inventory Reports](#python-inventory-reports)
 -   [SQL and Database Optimisation](#sql-and-database-optimisation)
 -   [Running Tests](#running-tests)
+-   [Logging and Monitoring](#logging-and-monitoring)
 -   [Troubleshooting](#troubleshooting)
 -   [Future Enhancements](#future-enhancements)
 
@@ -409,6 +410,82 @@ mvn test
 Review the Maven test output to confirm the test results. The H2 test
 database is separate from the local MySQL development database.
 
+## Logging and Monitoring
+
+The application uses **SLF4J** with Spring Boot's default logging implementation
+to record application activity and support troubleshooting.
+
+### Application logging
+
+The `ProductService` uses a class-level SLF4J logger to record important
+operations, including:
+
+- Retrieving all products and individual products.
+- Creating, updating and deleting products.
+- Calculating inventory value and stock totals.
+- Finding low-stock products.
+- Generating inventory summaries.
+- Retrieving paginated product results.
+
+Example log messages:
+
+```text
+INFO  - Fetching all products
+INFO  - Successfully retrieved 6 products
+INFO  - Adding new product: Gaming Mouse
+INFO  - Product created successfully with ID: 10
+WARN  - Product not found with ID: 100
+```
+
+### Logging configuration
+
+Logging levels and the console output format are configured in
+`inventory-api/src/main/resources/application.properties`:
+
+```properties
+logging.level.root=INFO
+logging.level.com.example.inventory=DEBUG
+logging.level.org.springframework.web=WARN
+logging.pattern.console=%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread] %logger{36} - %msg%n
+```
+
+| Log level | Purpose |
+|---|---|
+| `INFO` | Records normal application activity |
+| `DEBUG` | Provides detailed diagnostic information |
+| `WARN` | Highlights unexpected or noteworthy conditions |
+| `ERROR` | Records application errors |
+
+### Spring Boot Actuator
+
+Spring Boot Actuator provides endpoints for checking application health
+and inspecting application information and metrics.
+
+The following configuration exposes the endpoints:
+
+```properties
+management.endpoints.web.exposure.include=health,info,metrics
+management.endpoint.health.show-details=always
+
+management.info.env.enabled=true
+info.app.name=Smart Inventory Management System
+info.app.description=Inventory management REST API built with Spring Boot
+info.app.version=1.0.0
+```
+
+When the application is running on port `8080`, the monitoring endpoints
+are available at:
+
+| Endpoint | Description |
+|---|---|
+| `http://localhost:8080/actuator/health` | Reports application and configured component health |
+| `http://localhost:8080/actuator/info` | Displays the configured application information |
+| `http://localhost:8080/actuator/metrics` | Lists available application metrics |
+
+A healthy application should report a status such as `UP` from the health
+endpoint. The exact health response depends on the configured health
+indicators and the state of their underlying components.
+
 ## Troubleshooting
 
   ---------------------------------------------------------------------------
@@ -441,8 +518,8 @@ start the application.
 
 ## Future Enhancements
 
--   Add automated unit and integration tests for all API operations.
--   Add Swagger/OpenAPI documentation.
+-   Expand automated unit and integration test coverage as new features are added.
+-   Expand Swagger/OpenAPI documentation with additional response examples.
 -   Add Docker and Docker Compose for repeatable local setup.
 -   Add supplier and reorder-level management.
 -   Add authentication and role-based authorisation.
