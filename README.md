@@ -1,10 +1,6 @@
 # Smart Inventory Management System
 
-A portfolio project demonstrating how to build an inventory management
-backend with **Java, Spring Boot, MySQL, SQL and Python**. The Spring
-Boot application exposes REST APIs and manages database access, while a
-separate Python script consumes the API to analyse inventory and
-generate CSV and Excel reports.
+A full-stack inventory management portfolio project built with **Java, Spring Boot, MySQL, SQL, Python and React**. The Spring Boot backend exposes REST APIs and manages database access, the React frontend provides an interface for inventory management, and a separate Python script consumes the API to analyse inventory and generate CSV and Excel reports.
 
 ## Table of Contents
 
@@ -22,6 +18,7 @@ generate CSV and Excel reports.
 -   [Logging and Monitoring](#logging-and-monitoring)
 -   [Database Performance Optimisation](#database-performance-optimisation)
 -   [Docker and Docker Compose](#docker-and-docker-compose)
+-   [React Frontend](#react-frontend)
 -   [Troubleshooting](#troubleshooting)
 -   [Future Enhancements](#future-enhancements)
 
@@ -72,6 +69,15 @@ application logic in the backend.
 -   Identify low-stock products.
 -   Export reports to CSV and Excel.
 
+### React frontend
+
+-   Display an inventory dashboard with summary statistics.
+-   List products retrieved from the Spring Boot API.
+-   Add, edit and delete products through the REST API.
+-   Search loaded products by name or category.
+-   Display low-stock indicators.
+-   Provide responsive dashboard styling.
+
 ## Technology Stack
 
 Technology        Purpose
@@ -87,6 +93,10 @@ Python            Reporting and data-processing scripts
 Requests          Calling the Spring Boot API from Python
 Pandas            Data analysis and report preparation
 OpenPyXL          Excel file generation
+React             Frontend user interface
+Vite              Frontend development server and build tool
+JavaScript        Frontend application logic
+CSS               Responsive frontend styling
 
 ## Architecture
 
@@ -114,10 +124,7 @@ OpenPyXL          Excel file generation
                   +-------------------------+
 ```
 
-The controller receives HTTP requests, the service layer contains
-business logic, and the repository layer communicates with MySQL. The
-Python reporting script calls the API rather than querying the database
-directly.
+The React frontend and Python reporting script communicate with the Spring Boot REST API over HTTP. The controller receives requests, the service layer contains business logic, and the repository layer communicates with MySQL. Neither the React frontend nor the Python reporting script connects directly to the database.
 
 ## Project Structure
 
@@ -154,6 +161,17 @@ java-python-sql-inventory-management/
 |   |-- sample_data.sql
 |   |-- inventory_reports.sql
 |
+|-- inventory-frontend/
+|   |-- src/
+|   |   |-- services/productService.js
+|   |   |-- App.jsx
+|   |   |-- App.css
+|   |   |-- index.css
+|   |   |-- main.jsx
+|   |-- package.json
+|   |-- vite.config.js
+|
+|-- docker-compose.yml
 |-- .gitignore
 |-- README.md
 ```
@@ -167,6 +185,7 @@ and should not be committed.
 -   Java 17 or later.
 -   MySQL Server and MySQL Workbench.
 -   Python 3.
+-   Node.js and npm.
 -   IntelliJ IDEA or another Java IDE.
 -   Git.
 -   Maven, unless a Maven wrapper is included in the project.
@@ -279,6 +298,68 @@ The script fetches product data from the API and generates: -
 `python-tools/inventory_report.xlsx`
 
 The generated files are local outputs and are excluded from Git.
+
+
+## React Frontend
+
+The React frontend is located in the `inventory-frontend/` directory. It uses
+Vite for local development and communicates with the Spring Boot REST API.
+
+### Frontend features
+
+- Dashboard summary cards for total products, stock units, inventory value
+  and low-stock product count.
+- Product table populated from the backend.
+- Add, edit and delete product operations.
+- Client-side search by product name or category.
+- Low-stock status indicators.
+- Responsive layout for smaller screens.
+
+### Configure the API proxy
+
+The Vite development server proxies requests beginning with `/api` to the
+Spring Boot backend at `http://localhost:8080`. This configuration is in
+`inventory-frontend/vite.config.js`.
+
+The frontend calls relative API paths such as `/api/products`; the browser
+request is forwarded by Vite to the backend.
+
+### Run the frontend locally
+
+First, make sure the backend and MySQL database are running. They can be
+started using Docker Compose from the project root:
+
+```powershell
+docker compose up -d
+```
+
+Open a separate PowerShell terminal and run:
+
+```powershell
+cd inventory-frontend
+npm install
+npm run dev
+```
+
+Open the Vite URL shown in the terminal. The default address is:
+
+```text
+http://localhost:5173/
+```
+
+Keep the Vite development server running while using the frontend.
+
+### Build the frontend
+
+From the `inventory-frontend/` directory, run:
+
+```powershell
+npm run build
+```
+
+Vite creates the production build in `inventory-frontend/dist/`. The generated
+`node_modules/` and `dist/` directories should not be committed to Git.
+
 
 ## REST API Reference
 
@@ -732,7 +813,6 @@ start the application.
 -   Expand Swagger/OpenAPI documentation with additional response examples.
 -   Add supplier and reorder-level management.
 -   Add authentication and role-based authorisation.
--   Build a web frontend for inventory users.
 -   Add CI using GitHub Actions.
 -   Deploy the application to a cloud platform.
 
@@ -745,4 +825,4 @@ database tables with JPA and Hibernate. - Validating request data and
 handling API errors. - Writing SQL and JPQL aggregate queries. -
 Applying database indexes, pagination and sorting. - Consuming REST APIs
 from Python. - Analysing data with Pandas and exporting CSV and Excel
-reports. - Managing source code and documentation with Git.
+reports. - Managing source code and documentation with Git. - Building a React frontend with Vite. - Managing React state and effects with hooks. - Integrating frontend CRUD operations with REST APIs using the Fetch API. - Configuring a Vite development proxy between frontend and backend.
