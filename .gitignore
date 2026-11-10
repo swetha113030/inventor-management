@@ -11,3 +11,10 @@ application-local.properties
 # Generated inventory reports
 python-tools/inventory_report.csv
 python-tools/inventory_report.xlsx
+
+# React
+inventory-frontend/node_modules/
+inventory-frontend/dist/
+
+# Environment files
+.env
