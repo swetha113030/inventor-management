@@ -21,6 +21,7 @@ generate CSV and Excel reports.
 -   [Running Tests](#running-tests)
 -   [Logging and Monitoring](#logging-and-monitoring)
 -   [Database Performance Optimisation](#database-performance-optimisation)
+-   [Docker and Docker Compose](#docker-and-docker-compose)
 -   [Troubleshooting](#troubleshooting)
 -   [Future Enhancements](#future-enhancements)
 
@@ -588,6 +589,113 @@ A healthy application should report a status such as `UP` from the health
 endpoint. The exact health response depends on the configured health
 indicators and the state of their underlying components.
 
+
+## Docker and Docker Compose
+
+The application runs locally using Docker Compose, with the Spring Boot REST API
+and MySQL database in separate containers.
+
+### Docker files
+
+- `inventory-api/Dockerfile` builds the Spring Boot application using a multi-stage Maven and Java 17 build.
+- `inventory-api/.dockerignore` excludes build output and local IDE files from the Docker build context.
+- `docker-compose.yml` defines the API and MySQL services, ports, health check, network and persistent database volume.
+- `.env` stores local database credentials and must not be committed.
+
+### Container configuration
+
+| Service | Container | Host port | Container port |
+|---|---|---:|---:|
+| Spring Boot API | `inventory-api` | `8080` | `8080` |
+| MySQL | `inventory-mysql` | `3307` | `3306` |
+
+The API connects to MySQL using the Compose service hostname `mysql` and
+container port `3306`. Host port `3307` is used to avoid a conflict with a
+local MySQL server using port `3306`.
+
+### Configure environment variables
+
+Create a `.env` file in the project root:
+
+```properties
+MYSQL_ROOT_PASSWORD=your_local_root_password
+DB_PASSWORD=your_local_app_password
+```
+
+Use your own local passwords. The `.env` file must remain excluded from Git.
+
+### Build and start the containers
+
+Run these commands from the project root:
+
+```powershell
+docker compose up -d --build
+```
+
+Check container status:
+
+```powershell
+docker compose ps
+```
+
+View logs:
+
+```powershell
+docker compose logs -f
+```
+
+The MySQL service has a health check. Docker Compose waits for MySQL to become
+healthy before starting the API service.
+
+### Verify the Docker deployment
+
+| Component | URL |
+|---|---|
+| Products API | `http://localhost:8080/api/products` |
+| Swagger UI | `http://localhost:8080/swagger-ui/index.html` |
+| Actuator health | `http://localhost:8080/actuator/health` |
+| Actuator info | `http://localhost:8080/actuator/info` |
+
+### Useful Docker Compose commands
+
+```powershell
+# Start containers
+docker compose up -d
+
+# Build images and start containers
+docker compose up -d --build
+
+# List containers
+docker compose ps
+
+# View all service logs
+docker compose logs -f
+
+# View API logs
+docker compose logs inventory-api
+
+# Stop and remove containers (keeps the named database volume)
+docker compose down
+
+# Rebuild images
+docker compose build
+```
+
+MySQL data is stored in the named Docker volume `mysql_data`. Running
+`docker compose down` does not remove this volume. Avoid `docker compose down -v`
+unless you intentionally want to delete the persistent Docker database data.
+
+### Docker learning outcomes
+
+- Building a Spring Boot image with a multi-stage Dockerfile.
+- Running MySQL and Spring Boot as separate containers.
+- Configuring services with Docker Compose.
+- Using environment variables for database credentials.
+- Connecting containers through a Compose network.
+- Persisting database data with a named volume.
+- Using a health check to coordinate service startup.
+
+
 ## Troubleshooting
 
   ---------------------------------------------------------------------------
@@ -622,7 +730,6 @@ start the application.
 
 -   Expand automated unit and integration test coverage as new features are added.
 -   Expand Swagger/OpenAPI documentation with additional response examples.
--   Add Docker and Docker Compose for repeatable local setup.
 -   Add supplier and reorder-level management.
 -   Add authentication and role-based authorisation.
 -   Build a web frontend for inventory users.
