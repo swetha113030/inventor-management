@@ -1,5 +1,5 @@
-package com.example.inventory.config;
 
+package com.example.inventory.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
@@ -15,10 +15,12 @@ public class CorsConfig {
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/api/**")
                         .allowedOrigins(
-                                "https://inventor-management-tau.vercel.app"
+                                "https://inventor-management-tau.vercel.app",
+                                "https://inventor-management-aeqoi8ex0-swetha-fcaf.vercel.app"
                         )
                         .allowedMethods(
-                                "GET", "POST", "PUT", "DELETE", "OPTIONS"
+                                "GET", "POST", "PUT",
+                                "DELETE", "OPTIONS"
                         )
                         .allowedHeaders("*");
             }
