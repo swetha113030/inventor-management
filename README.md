@@ -19,6 +19,7 @@ A full-stack inventory management portfolio project built with **Java, Spring Bo
 -   [Database Performance Optimisation](#database-performance-optimisation)
 -   [Docker and Docker Compose](#docker-and-docker-compose)
 -   [React Frontend](#react-frontend)
+-   [Continuous Integration with GitHub Actions](#continuous-integration-with-github-actions)
 -   [Troubleshooting](#troubleshooting)
 -   [Future Enhancements](#future-enhancements)
 
@@ -777,6 +778,78 @@ unless you intentionally want to delete the persistent Docker database data.
 - Using a health check to coordinate service startup.
 
 
+
+## Continuous Integration with GitHub Actions
+
+The repository includes a GitHub Actions workflow for automatically building
+and validating the Spring Boot backend and React frontend.
+
+### Workflow file
+
+The workflow is defined in `.github/workflows/ci.yml`.
+
+### When the workflow runs
+
+The workflow is configured to run when:
+- Code is pushed to the `dynamic-queries` branch.
+- A pull request targets the `dynamic-queries` branch.
+- The workflow is started manually using the GitHub Actions interface.
+
+### Backend CI job
+
+The backend job runs on an Ubuntu GitHub-hosted runner and:
+1. Checks out the repository.
+2. Sets up Eclipse Temurin Java 17.
+3. Enables Maven dependency caching.
+4. Runs `mvn -B clean verify` from the `inventory-api/` directory.
+
+The Maven `verify` lifecycle compiles the backend, runs the configured tests,
+and performs the checks bound to that lifecycle.
+
+### Frontend CI job
+
+The frontend job runs independently on an Ubuntu GitHub-hosted runner and:
+1. Checks out the repository.
+2. Sets up Node.js 22.
+3. Enables npm dependency caching using `package-lock.json`.
+4. Installs dependencies with `npm ci`.
+5. Creates the production build with `npm run build`.
+
+### Run the checks locally
+
+Backend:
+
+```powershell
+cd inventory-api
+mvn clean verify
+```
+
+Frontend:
+
+```powershell
+cd inventory-frontend
+npm ci
+npm run build
+```
+
+### View workflow results
+
+1. Open the repository on GitHub.
+2. Select the **Actions** tab.
+3. Open the **Smart Inventory Management CI** workflow.
+4. Select a workflow run to inspect the backend and frontend jobs and their logs.
+
+A successful run shows both jobs completing successfully. If a job fails,
+open its logs to identify the failing build or test step.
+
+### Benefits
+
+- Automatically runs backend tests when code changes.
+- Checks that the React frontend can be built.
+- Detects build and test failures earlier.
+- Provides repeatable validation for pushes and pull requests.
+
+
 ## Troubleshooting
 
   ---------------------------------------------------------------------------
@@ -813,7 +886,6 @@ start the application.
 -   Expand Swagger/OpenAPI documentation with additional response examples.
 -   Add supplier and reorder-level management.
 -   Add authentication and role-based authorisation.
--   Add CI using GitHub Actions.
 -   Deploy the application to a cloud platform.
 
 ## Project Learning Outcomes
@@ -825,4 +897,4 @@ database tables with JPA and Hibernate. - Validating request data and
 handling API errors. - Writing SQL and JPQL aggregate queries. -
 Applying database indexes, pagination and sorting. - Consuming REST APIs
 from Python. - Analysing data with Pandas and exporting CSV and Excel
-reports. - Managing source code and documentation with Git. - Building a React frontend with Vite. - Managing React state and effects with hooks. - Integrating frontend CRUD operations with REST APIs using the Fetch API. - Configuring a Vite development proxy between frontend and backend.
+reports. - Managing source code and documentation with Git. - Building a React frontend with Vite. - Managing React state and effects with hooks. - Integrating frontend CRUD operations with REST APIs using the Fetch API. - Configuring a Vite development proxy between frontend and backend. - Automating backend tests and frontend builds with GitHub Actions.
