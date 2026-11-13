@@ -1,0 +1,60 @@
+name: Smart Inventory Management CI
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+
+  backend-ci:
+    name: Backend - Build and Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+          cache-dependency-path: inventory-api/pom.xml
+
+      - name: Build backend and run tests
+        working-directory: inventory-api
+        run: mvn -B clean verify
+
+  frontend-ci:
+    name: Frontend - Install and Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: inventory-frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: inventory-frontend
+        run: npm ci
+
+      - name: Build React application
+        working-directory: inventory-frontend
+        run: npm run build
