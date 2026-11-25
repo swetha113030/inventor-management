@@ -5,6 +5,7 @@ A full-stack inventory management portfolio project built with **Java, Spring Bo
 ## Table of Contents
 
 -   [Project Overview](#project-overview)
+-   [Project Screenshots](#project-screenshots)
 -   [Features](#features)
 -   [Technology Stack](#technology-stack)
 -   [Architecture](#architecture)
@@ -35,6 +36,27 @@ produces inventory analysis reports.
 **Design principle:** Python does not connect directly to MySQL. It
 communicates with the Spring Boot API, keeping database access and
 application logic in the backend.
+
+## Project Screenshots
+
+The following screenshots show the deployed application, its REST API
+documentation and the automated CI workflow.
+
+### Inventory dashboard
+
+![Inventory dashboard showing product count, stock units, inventory value and low-stock count](screenshots/dashboard.png)
+
+### Product management
+
+![Product management table showing product details, stock status and CRUD actions](screenshots/product-management.png)
+
+### REST API documentation
+
+![Swagger UI showing the Smart Inventory Management API endpoints](screenshots/swagger-api.png)
+
+### Continuous integration
+
+![GitHub Actions workflow showing successful runs on the main branch](screenshots/github-actions.png)
 
 ## Features
 
