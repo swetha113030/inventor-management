@@ -23,14 +23,25 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/products")
 @Tag(name = "Product Management", description = "APIs for managing products and inventory")
 public class ProductController {
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
+            "id",
+            "name",
+            "category",
+            "price",
+            "quantity"
+    );
+
+    private static final int MAX_PAGE_SIZE = 100;
 
     private final ProductService service;
 
@@ -102,14 +113,21 @@ public class ProductController {
         return service.getTotalInventoryValue();
     }
 
+    @GetMapping("/low-stock")
     @Operation(
             summary = "Get low-stock products",
             description = "Retrieves products whose stock quantity is below the specified threshold."
     )
-    @GetMapping("/low-stock")
     public List<Product> getLowStockProducts(
-            @Parameter(description = "Stock threshold. Defaults to 5.")
+            @Parameter(description = "Stock threshold. Defaults to 5.", example = "5")
             @RequestParam(defaultValue = "5") Integer threshold) {
+
+        if (threshold < 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Stock threshold cannot be negative"
+            );
+        }
 
         return service.getLowStockProducts(threshold);
     }
@@ -165,23 +183,53 @@ public class ProductController {
         return service.getCategoryProductCount(category);
     }
 
+    @GetMapping("/page")
     @Operation(
             summary = "Get paginated products",
             description = "Retrieves products page by page with configurable sorting."
     )
-    @GetMapping("/page")
     public Page<Product> getProductsPaginated(
-            @Parameter(description = "Page number (starts from 0)")
+
+            @Parameter(description = "Page number (starts from 0)", example = "0")
             @RequestParam(defaultValue = "0") int page,
 
-            @Parameter(description = "Number of products per page")
+            @Parameter(description = "Number of products per page (maximum 100)", example = "5")
             @RequestParam(defaultValue = "5") int size,
 
-            @Parameter(description = "Field used for sorting, for example id, name or price")
+            @Parameter(description = "Field used for sorting: id, name, category, price or quantity")
             @RequestParam(defaultValue = "id") String sortBy,
 
             @Parameter(description = "Sort direction: asc or desc")
             @RequestParam(defaultValue = "asc") String direction) {
+
+        if (page < 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Page number cannot be negative"
+            );
+        }
+
+        if (size < 1 || size > MAX_PAGE_SIZE) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Page size must be between 1 and " + MAX_PAGE_SIZE
+            );
+        }
+
+        if (!ALLOWED_SORT_FIELDS.contains(sortBy)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Invalid sort field. Allowed fields: " + ALLOWED_SORT_FIELDS
+            );
+        }
+
+        if (!direction.equalsIgnoreCase("asc")
+                && !direction.equalsIgnoreCase("desc")) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Sort direction must be either asc or desc"
+            );
+        }
 
         Sort sort = direction.equalsIgnoreCase("desc")
                 ? Sort.by(sortBy).descending()

@@ -285,4 +285,71 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.content.length()").value(2))
                 .andExpect(jsonPath("$.totalElements").value(3));
     }
+
+    // 18. Reject negative page number
+    @Test
+    void rejectsNegativePageNumber() throws Exception {
+        mockMvc.perform(get("/api/products/page")
+                        .param("page", "-1"))
+                .andExpect(status().isBadRequest());
+    }
+
+    // 19. Reject zero page size
+    @Test
+    void rejectsZeroPageSize() throws Exception {
+        mockMvc.perform(get("/api/products/page")
+                        .param("size", "0"))
+                .andExpect(status().isBadRequest());
+    }
+
+    // 20. Reject page size greater than 100
+    @Test
+    void rejectsPageSizeGreaterThanMaximum() throws Exception {
+        mockMvc.perform(get("/api/products/page")
+                        .param("size", "101"))
+                .andExpect(status().isBadRequest());
+    }
+
+    // 21. Reject unsupported sort field
+    @Test
+    void rejectsInvalidSortField() throws Exception {
+        mockMvc.perform(get("/api/products/page")
+                        .param("sortBy", "unknownField"))
+                .andExpect(status().isBadRequest());
+    }
+
+    // 22. Reject invalid sort direction
+    @Test
+    void rejectsInvalidSortDirection() throws Exception {
+        mockMvc.perform(get("/api/products/page")
+                        .param("direction", "random"))
+                .andExpect(status().isBadRequest());
+    }
+
+    // 23. Reject negative low-stock threshold
+    @Test
+    void rejectsNegativeLowStockThreshold() throws Exception {
+        mockMvc.perform(get("/api/products/low-stock")
+                        .param("threshold", "-1"))
+                .andExpect(status().isBadRequest());
+    }
+
+    // 24. Verify descending price sorting
+    @Test
+    void returnsProductsSortedByPriceDescending() throws Exception {
+
+        createProduct("Keyboard", "Accessories", "30.00", 5);
+        createProduct("Laptop", "Electronics", "750.00", 3);
+        createProduct("Mouse", "Accessories", "20.00", 10);
+
+        mockMvc.perform(get("/api/products/page")
+                        .param("page", "0")
+                        .param("size", "10")
+                        .param("sortBy", "price")
+                        .param("direction", "desc"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].name").value("Laptop"))
+                .andExpect(jsonPath("$.content[1].name").value("Keyboard"))
+                .andExpect(jsonPath("$.content[2].name").value("Mouse"));
+    }
 }
