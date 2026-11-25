@@ -182,28 +182,32 @@ class ProductServiceTest {
         assertEquals(1, result.size());
     }
 
+
     @Test
     void calculatesInventorySummary() {
-        Product secondProduct = new Product();
-        secondProduct.setId(2L);
-        secondProduct.setName("Keyboard");
-        secondProduct.setCategory("Accessories");
-        secondProduct.setPrice(new BigDecimal("30.00"));
-        secondProduct.setQuantity(2);
 
-        when(repository.findAll())
-                .thenReturn(List.of(product, secondProduct));
+        when(repository.count()).thenReturn(2L);
+
+        when(repository.calculateTotalStockUnits())
+                .thenReturn(12L);
+
+        when(repository.calculateTotalInventoryValue())
+                .thenReturn(new BigDecimal("260.00"));
+
+        when(repository.countByQuantityLessThan(5))
+                .thenReturn(1L);
 
         InventorySummary result = service.getInventorySummary();
 
-        assertEquals(2, result.totalProducts());
-        assertEquals(12, result.totalStockUnits());
+        assertEquals(2L, result.totalProducts());
+        assertEquals(12L, result.totalStockUnits());
         assertEquals(
                 new BigDecimal("260.00"),
                 result.totalInventoryValue()
         );
-        assertEquals(1, result.lowStockProductCount());
+        assertEquals(1L, result.lowStockProductCount());
     }
+
 
     @Test
     void getsPaginatedProducts() {

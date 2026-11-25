@@ -239,4 +239,84 @@ public class ProductController {
 
         return service.getProductsPaginated(pageable);
     }
+
+
+    @Operation(
+            summary = "Search and filter products",
+            description = """
+                    Searches products using optional name, category, price range,
+                    and stock availability filters. Results are paginated and sortable.
+                    """
+    )
+    @GetMapping("/search")
+    public Page<Product> searchProducts(
+
+            @Parameter(description = "Product name to search for", example = "mouse")
+            @RequestParam(required = false) String name,
+
+            @Parameter(description = "Product category", example = "Accessories")
+            @RequestParam(required = false) String category,
+
+            @Parameter(description = "Minimum product price", example = "10.00")
+            @RequestParam(required = false) BigDecimal minPrice,
+
+            @Parameter(description = "Maximum product price", example = "100.00")
+            @RequestParam(required = false) BigDecimal maxPrice,
+
+            @Parameter(description = "Filter by stock availability", example = "true")
+            @RequestParam(required = false) Boolean inStock,
+
+            @RequestParam(defaultValue = "0") int page,
+
+            @RequestParam(defaultValue = "10") int size,
+
+            @RequestParam(defaultValue = "id") String sortBy,
+
+            @RequestParam(defaultValue = "asc") String direction) {
+
+        if (page < 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Page number cannot be negative"
+            );
+        }
+
+        if (size < 1 || size > MAX_PAGE_SIZE) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Page size must be between 1 and " + MAX_PAGE_SIZE
+            );
+        }
+
+        if (!ALLOWED_SORT_FIELDS.contains(sortBy)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Invalid sort field"
+            );
+        }
+
+        if (!direction.equalsIgnoreCase("asc")
+                && !direction.equalsIgnoreCase("desc")) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Sort direction must be asc or desc"
+            );
+        }
+
+        Sort sort = direction.equalsIgnoreCase("desc")
+                ? Sort.by(sortBy).descending()
+                : Sort.by(sortBy).ascending();
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        return service.searchProducts(
+                name,
+                category,
+                minPrice,
+                maxPrice,
+                inStock,
+                pageable
+        );
+    }
+
 }

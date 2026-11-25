@@ -352,4 +352,98 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.content[1].name").value("Keyboard"))
                 .andExpect(jsonPath("$.content[2].name").value("Mouse"));
     }
+
+
+    // 25. Search products by name
+    @Test
+    void searchesProductsByName() throws Exception {
+        createProduct("Gaming Mouse", "Accessories", "50.00", 10);
+        createProduct("Laptop", "Electronics", "750.00", 5);
+
+        mockMvc.perform(get("/api/products/search")
+                        .param("name", "mouse"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content[0].name").value("Gaming Mouse"));
+    }
+
+    // 26. Filter products by category
+    @Test
+    void filtersProductsByCategory() throws Exception {
+        createProduct("Mouse", "Accessories", "20.00", 5);
+        createProduct("Laptop", "Electronics", "750.00", 3);
+
+        mockMvc.perform(get("/api/products/search")
+                        .param("category", "accessories"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content[0].category").value("Accessories"));
+    }
+
+    // 27. Filter products by price range
+    @Test
+    void filtersProductsByPriceRange() throws Exception {
+        createProduct("Keyboard", "Accessories", "30.00", 5);
+        createProduct("Laptop", "Electronics", "750.00", 3);
+        createProduct("Mouse", "Accessories", "20.00", 10);
+
+        mockMvc.perform(get("/api/products/search")
+                        .param("minPrice", "25")
+                        .param("maxPrice", "100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content[0].name").value("Keyboard"));
+    }
+
+    // 28. Filter products by stock availability
+    @Test
+    void filtersProductsInStock() throws Exception {
+        createProduct("Available Mouse", "Accessories", "20.00", 5);
+        createProduct("Out of Stock Keyboard", "Accessories", "30.00", 0);
+
+        mockMvc.perform(get("/api/products/search")
+                        .param("inStock", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content[0].name").value("Available Mouse"));
+    }
+
+    // 29. Combine multiple product filters
+    @Test
+    void combinesMultipleProductFilters() throws Exception {
+        createProduct("Gaming Mouse", "Accessories", "50.00", 10);
+        createProduct("Office Mouse", "Accessories", "15.00", 0);
+        createProduct("Gaming Laptop", "Electronics", "900.00", 5);
+
+        mockMvc.perform(get("/api/products/search")
+                        .param("name", "gaming")
+                        .param("category", "Accessories")
+                        .param("minPrice", "20")
+                        .param("maxPrice", "100")
+                        .param("inStock", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content[0].name").value("Gaming Mouse"));
+    }
+
+    // 30. Reject invalid price range
+    @Test
+    void rejectsInvalidPriceRange() throws Exception {
+        mockMvc.perform(get("/api/products/search")
+                        .param("minPrice", "100")
+                        .param("maxPrice", "20"))
+                .andExpect(status().isBadRequest());
+    }
+
+    // 31. Search with no filters
+    @Test
+    void searchesAllProductsWhenNoFiltersProvided() throws Exception {
+        createProduct("Mouse", "Accessories", "20.00", 5);
+        createProduct("Laptop", "Electronics", "750.00", 3);
+
+        mockMvc.perform(get("/api/products/search"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(2));
+    }
+
 }

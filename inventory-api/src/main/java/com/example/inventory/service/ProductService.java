@@ -4,6 +4,7 @@ package com.example.inventory.service;
 import com.example.inventory.dto.InventorySummary;
 import com.example.inventory.entity.Product;
 import com.example.inventory.repository.ProductRepository;
+import com.example.inventory.repository.ProductSpecifications;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -164,26 +165,21 @@ public class ProductService {
         return products;
     }
 
-    // Get complete inventory summary
+
+    // Get complete inventory summary using database aggregation
     public InventorySummary getInventorySummary() {
-        logger.info("Generating inventory summary");
 
-        List<Product> products = repository.findAll();
+        logger.info("Generating inventory summary using database aggregation");
 
-        long totalProducts = products.size();
+        long totalProducts = repository.count();
 
-        long totalStockUnits = products.stream()
-                .mapToLong(product -> product.getQuantity())
-                .sum();
+        long totalStockUnits = repository.calculateTotalStockUnits();
 
-        BigDecimal totalInventoryValue = products.stream()
-                .map(product -> product.getPrice()
-                        .multiply(BigDecimal.valueOf(product.getQuantity())))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalInventoryValue =
+                repository.calculateTotalInventoryValue();
 
-        long lowStockProductCount = products.stream()
-                .filter(product -> product.getQuantity() < 5)
-                .count();
+        long lowStockProductCount =
+                repository.countByQuantityLessThan(5);
 
         InventorySummary summary = new InventorySummary(
                 totalProducts,
@@ -192,16 +188,17 @@ public class ProductService {
                 lowStockProductCount
         );
 
-        logger.info("Inventory summary generated successfully. "
-                        + "Products: {}, Stock units: {}, Inventory value: {}, "
-                        + "Low-stock products: {}",
+        logger.info(
+                "Inventory summary generated. Products: {}, Stock units: {}, Value: {}, Low stock: {}",
                 totalProducts,
                 totalStockUnits,
                 totalInventoryValue,
-                lowStockProductCount);
+                lowStockProductCount
+        );
 
         return summary;
     }
+
 
     // Retrieve products with pagination and sorting
     public Page<Product> getProductsPaginated(Pageable pageable) {
@@ -215,4 +212,53 @@ public class ProductService {
 
         return result;
     }
+
+    // Search products using multiple optional filters
+    public Page<Product> searchProducts(
+            String name,
+            String category,
+            BigDecimal minPrice,
+            BigDecimal maxPrice,
+            Boolean inStock,
+            Pageable pageable) {
+
+        logger.info(
+                "Searching products. Name: {}, Category: {}, Min price: {}, Max price: {}, In stock: {}",
+                name, category, minPrice, maxPrice, inStock
+        );
+
+        if (minPrice != null && minPrice.compareTo(BigDecimal.ZERO) < 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Minimum price cannot be negative"
+            );
+        }
+
+        if (maxPrice != null && maxPrice.compareTo(BigDecimal.ZERO) < 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Maximum price cannot be negative"
+            );
+        }
+
+        if (minPrice != null && maxPrice != null
+                && minPrice.compareTo(maxPrice) > 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Minimum price cannot be greater than maximum price"
+            );
+        }
+
+        Page<Product> result = repository.findAll(
+                ProductSpecifications.filterProducts(
+                        name, category, minPrice, maxPrice, inStock
+                ),
+                pageable
+        );
+
+        logger.info("Found {} matching products", result.getTotalElements());
+
+        return result;
+    }
+
 }
