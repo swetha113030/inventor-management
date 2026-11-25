@@ -380,7 +380,7 @@ PUT                     `/api/products/{id}`                                    
 
 DELETE                  `/api/products/{id}`                                         Delete a product
 
-GET                     `/api/products/search?name=mouse`                            Search products by name
+GET                     `/api/products/search?name=mouse`                            Search and filter products
 
 GET                     `/api/products/low-stock?threshold=5`                        Find products below a
 stock threshold
@@ -406,9 +406,41 @@ GET                     `/api/products/page?page=0&size=5&sortBy=id&direction=as
 products with sorting
   ------------------------------------------------------------------------------------------------------------
 
+### Search and filtering
+
+`GET /api/products/search` supports optional query parameters that can be
+combined:
+
+| Parameter | Description | Example |
+|---|---|---|
+| `name` | Case-insensitive partial product-name match | `name=mouse` |
+| `category` | Product category match | `category=Accessories` |
+| `minPrice` | Minimum product price | `minPrice=10` |
+| `maxPrice` | Maximum product price | `maxPrice=100` |
+| `inStock` | `true` for quantity greater than zero; `false` for zero quantity | `inStock=true` |
+| `page` | Zero-based page number | `page=0` |
+| `size` | Number of records per page (maximum 100) | `size=10` |
+| `sortBy` | Sort field: `id`, `name`, `category`, `price` or `quantity` | `sortBy=price` |
+| `direction` | Sort direction: `asc` or `desc` | `direction=desc` |
+
+Example requests:
+
+```text
+GET /api/products/search?name=mouse
+GET /api/products/search?category=Accessories&inStock=true
+GET /api/products/search?minPrice=10&maxPrice=100&page=0&size=10
+GET /api/products/search?name=mouse&category=Accessories&inStock=true&sortBy=price&direction=asc
+```
+
+The search endpoint uses Spring Data JPA Specifications so optional filters
+can be composed into one database query. Invalid price ranges, negative page
+numbers, unsupported sort fields, invalid sort directions and page sizes
+outside the supported range are rejected.
+
 Pagination parameters: - `page`: zero-based page number. - `size`:
-number of records per page. - `sortBy`: product field used for
-sorting. - `direction`: `asc` or `desc`.
+number of records per page (maximum 100). - `sortBy`: product field used for
+sorting (`id`, `name`, `category`, `price` or `quantity`). - `direction`:
+`asc` or `desc`.
 
 ### Example: Create a product
 
@@ -650,7 +682,7 @@ The following configuration exposes the endpoints:
 
 ```properties
 management.endpoints.web.exposure.include=health,info,metrics
-management.endpoint.health.show-details=always
+management.endpoint.health.show-details=never
 
 management.info.env.enabled=true
 info.app.name=Smart Inventory Management System
@@ -791,9 +823,12 @@ The workflow is defined in `.github/workflows/ci.yml`.
 ### When the workflow runs
 
 The workflow is configured to run when:
-- Code is pushed to the `dynamic-queries` branch.
-- A pull request targets the `dynamic-queries` branch.
+- Code is pushed to the `main` branch.
+- A pull request targets the `main` branch.
 - The workflow is started manually using the GitHub Actions interface.
+
+Keep these branch filters aligned with the repository's default and deployment
+branch if the branch strategy changes.
 
 ### Backend CI job
 
@@ -850,6 +885,38 @@ open its logs to identify the failing build or test step.
 - Provides repeatable validation for pushes and pull requests.
 
 
+## Cloud Deployment
+
+The project is deployed as separate frontend, backend and database services:
+
+| Component | Platform | Configuration |
+|---|---|---|
+| React frontend | Vercel | Vite production build; API base URL is configured with `VITE_API_BASE_URL` |
+| Spring Boot REST API | Render | Docker deployment; listens on the platform-provided `PORT` |
+| Relational database | TiDB Cloud | MySQL-compatible connection over TLS |
+
+### Production URLs
+
+- **Frontend:** https://inventor-management-tau.vercel.app
+- **Backend API:** https://inventory-api-0xcs.onrender.com
+- **Swagger UI:** https://inventory-api-0xcs.onrender.com/swagger-ui/index.html
+- **Health check:** https://inventory-api-0xcs.onrender.com/actuator/health
+
+The backend uses environment variables for its database connection. Configure
+`DB_URL`, `DB_USERNAME` and `DB_PASSWORD` in the Render service settings; do
+not place production credentials in this repository. The frontend uses
+`VITE_API_BASE_URL` to point to the deployed backend.
+
+Render Auto-Deploy is enabled for the `main` branch. A successful push to
+that branch triggers a backend deployment. GitHub Actions validates the
+backend and frontend builds independently of the hosting platform's
+deployment process.
+
+The frontend currently performs its product-name/category search on the
+products already loaded in the browser. The backend `/api/products/search`
+endpoint provides server-side filtering and pagination and can be integrated
+into the frontend as a future improvement.
+
 ## Troubleshooting
 
   ---------------------------------------------------------------------------
@@ -886,7 +953,7 @@ start the application.
 -   Expand Swagger/OpenAPI documentation with additional response examples.
 -   Add supplier and reorder-level management.
 -   Add authentication and role-based authorisation.
--   Deploy the application to a cloud platform.
+-   Integrate the backend's server-side search and filtering endpoint into the React frontend.
 
 ## Project Learning Outcomes
 
